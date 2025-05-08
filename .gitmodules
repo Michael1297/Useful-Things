@@ -1,0 +1,18 @@
+[submodule "java/third_party/Wild-KMP"]
+	path = java/third_party/Wild-KMP
+	url = https://github.com/thevarunshah/Wild-KMP
+[submodule "java/third_party/Java"]
+	path = java/third_party/Java
+	url = https://github.com/TheAlgorithms/Java
+[submodule "cpp/third_party/tinybits"]
+    path = cpp/third_party/tinybits
+    url = https://github.com/r-lyeh/tinybits
+[submodule "cpp/third_party/smhasher"]
+    path = cpp/third_party/smhasher
+    url = https://github.com/rurban/smhasher
+[submodule "cpp/third_party/C"]
+    path = cpp/third_party/C
+    url = https://github.com/TheAlgorithms/C
+[submodule "cpp/third_party/C-Plus-Plus"]
+    path = cpp/third_party/C-Plus-Plus
+    url = https://github.com/TheAlgorithms/C-Plus-Plus

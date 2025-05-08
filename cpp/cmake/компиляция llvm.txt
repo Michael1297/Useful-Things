@@ -1,0 +1,100 @@
+cmake_minimum_required(VERSION 3.15)
+project(LLVMIRExample)
+
+# Указываем компилятор Clang
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+
+# Проверяем наличие утилит opt и LLVM
+find_program(OPT_EXECUTABLE opt)
+find_program(LLVM_AS_EXECUTABLE llvm-as)
+if(NOT OPT_EXECUTABLE OR NOT LLVM_AS_EXECUTABLE)
+    message(FATAL_ERROR "LLVM tools (opt, llvm-as) are required but not found. Please install LLVM.")
+endif()
+
+# Создаем подкаталоги для выходных файлов
+set(LLVM_IR_DIR "${CMAKE_CURRENT_BINARY_DIR}/llvm_ir")
+set(OPTIMIZED_IR_DIR "${CMAKE_CURRENT_BINARY_DIR}/optimized_ir")
+set(OPTIMIZED_BC_DIR "${CMAKE_CURRENT_BINARY_DIR}/optimized_bc")
+file(MAKE_DIRECTORY ${LLVM_IR_DIR})
+file(MAKE_DIRECTORY ${OPTIMIZED_IR_DIR})
+file(MAKE_DIRECTORY ${OPTIMIZED_BC_DIR})
+
+# Список исходных файлов
+set(SOURCES main.cpp another_file.cpp)
+
+# Функция для генерации LLVM IR
+function(generate_llvm_ir source_file output_file)
+    add_custom_command(
+            OUTPUT ${output_file}
+            COMMAND ${CMAKE_CXX_COMPILER} -emit-llvm -S -o ${output_file} ${CMAKE_CURRENT_SOURCE_DIR}/${source_file}
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${source_file}
+            COMMENT "Generating LLVM IR for ${source_file}"
+    )
+endfunction()
+
+# Функция для оптимизации LLVM IR
+function(optimize_llvm_ir input_file output_file)
+    add_custom_command(
+            OUTPUT ${output_file}
+            COMMAND ${OPT_EXECUTABLE} -O1 -S -o ${output_file} ${input_file}
+            DEPENDS ${input_file}
+            COMMENT "Optimizing LLVM IR for ${input_file}"
+    )
+endfunction()
+
+# Функция для конвертации LLVM IR в биткод
+function(convert_to_bc input_file output_file)
+    add_custom_command(
+            OUTPUT ${output_file}
+            COMMAND ${LLVM_AS_EXECUTABLE} ${input_file} -o ${output_file}
+            DEPENDS ${input_file}
+            COMMENT "Converting LLVM IR to bitcode: ${input_file}"
+            VERBATIM
+    )
+endfunction()
+
+# Списки для хранения выходных файлов
+set(LLVM_IR_FILES "")
+set(OPTIMIZED_LLVM_IR_FILES "")
+set(OPTIMIZED_BC_FILES "")
+
+# Генерация, оптимизация и конвертация для каждого исходного файла
+foreach(source_file IN LISTS SOURCES)
+    # Определяем базовое имя файла (без расширения)
+    get_filename_component(base_name ${source_file} NAME_WE)
+
+    # 1. Генерация текстового LLVM IR
+    set(llvm_ir_file "${LLVM_IR_DIR}/${base_name}.ll")
+    generate_llvm_ir(${source_file} ${llvm_ir_file})
+    list(APPEND LLVM_IR_FILES ${llvm_ir_file})
+
+    # 2. Оптимизация LLVM IR
+    set(optimized_ir_file "${OPTIMIZED_IR_DIR}/${base_name}_optimized.ll")
+    optimize_llvm_ir(${llvm_ir_file} ${optimized_ir_file})
+    list(APPEND OPTIMIZED_IR_FILES ${optimized_ir_file})
+
+    # 3. Конвертация оптимизированного IR в биткод
+    set(optimized_bc_file "${OPTIMIZED_BC_DIR}/${base_name}_optimized.bc")
+    convert_to_bc(${optimized_ir_file} ${optimized_bc_file})
+    list(APPEND OPTIMIZED_BC_FILES ${optimized_bc_file})
+endforeach()
+
+# Цель для сборки всех файлов
+add_custom_target(LLVMIR ALL
+        DEPENDS ${LLVM_IR_FILES} ${OPTIMIZED_IR_FILES} ${OPTIMIZED_BC_FILES} LLVMIRExample
+        COMMENT "Building: original IR, optimized IR, optimized bitcode and executable"
+)
+
+# Цель для создания исполняемого файла (опционально)
+add_executable(LLVMIRExample ${SOURCES})
+
+# Дополнительные цели для удобства
+add_custom_target(generate_ir DEPENDS ${LLVM_IR_FILES})
+add_custom_target(optimize_ir DEPENDS ${OPTIMIZED_LLVM_IR_FILES})
+add_custom_target(generate_bc DEPENDS ${OPTIMIZED_BC_FILES})
+
+# Вывод информации о путях
+message(STATUS "Generated LLVM IR files will be in: ${LLVM_IR_DIR}")
+message(STATUS "Optimized LLVM IR files will be in: ${OPTIMIZED_IR_DIR}")
+message(STATUS "Optimized bitcode files will be in: ${OPTIMIZED_BC_DIR}")
