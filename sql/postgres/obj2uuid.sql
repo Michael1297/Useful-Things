@@ -2,11 +2,11 @@
 CREATE OR REPLACE FUNCTION obj2uuid(object TEXT)
 RETURNS UUID AS $$
 SELECT (
-           substring(object FROM 1 FOR 8) || '-' ||
-           substring(object FROM 9 FOR 4) || '-' ||
-           substring(object FROM 13 FOR 4) || '-' ||
-           substring(object FROM 17 FOR 4) || '-' ||
-           substring(object FROM 21 FOR 12)
+           substr(object, 1, 8) || '-' ||
+           substr(object, 9, 4) || '-' ||
+           substr(object, 13, 4) || '-' ||
+           substr(object, 17, 4) || '-' ||
+           substr(object, 21, 12)
            )::UUID;
 $$ LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE;
 
